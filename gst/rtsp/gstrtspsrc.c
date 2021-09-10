@@ -2847,20 +2847,14 @@ gst_rtspsrc_perform_seek (GstRTSPSrc * src, GstEvent * event)
 
   /* copy segment, we need this because we still need the old
    * segment when we close the current segment. */
-  memcpy (&seeksegment, &src->segment, sizeof (GstSegment));
+  seeksegment = src->segment;
 
   /* configure the seek parameters in the seeksegment. We will then have the
    * right values in the segment to perform the seek */
   GST_DEBUG_OBJECT (src, "configuring seek");
-  seeksegment.duration = GST_CLOCK_TIME_NONE;
   rate_change_same_direction = (rate * seeksegment.rate) > 0;
   gst_segment_do_seek (&seeksegment, rate, format, flags,
       cur_type, cur, stop_type, stop, &update);
-
-  /* figure out the last position we need to play. If it's configured (stop !=
-   * -1), use that, else we play until the total duration of the file */
-  if ((stop = seeksegment.stop) == -1)
-    stop = seeksegment.duration;
 
   /* if we were playing, pause first */
   playing = (src->state == GST_RTSP_STATE_PLAYING);
@@ -2889,7 +2883,7 @@ gst_rtspsrc_perform_seek (GstRTSPSrc * src, GstEvent * event)
   }
 
   /* now we did the seek and can activate the new segment values */
-  memcpy (&src->segment, &seeksegment, sizeof (GstSegment));
+  src->segment = seeksegment;
 
   /* if we're doing a segment seek, post a SEGMENT_START message */
   if (src->segment.flags & GST_SEEK_FLAG_SEGMENT) {
@@ -2897,10 +2891,6 @@ gst_rtspsrc_perform_seek (GstRTSPSrc * src, GstEvent * event)
         gst_message_new_segment_start (GST_OBJECT_CAST (src),
             src->segment.format, src->segment.position));
   }
-
-  /* now create the newsegment */
-  GST_DEBUG_OBJECT (src, "Creating newsegment from %" G_GINT64_FORMAT
-      " to %" G_GINT64_FORMAT, src->segment.position, stop);
 
   /* mark discont when needed */
   if (!(rate_change_only && rate_change_same_direction)) {
@@ -2973,7 +2963,15 @@ gst_rtspsrc_handle_src_event (GstPad * pad, GstObject * parent,
 
   switch (GST_EVENT_TYPE (event)) {
     case GST_EVENT_SEEK:
-      res = gst_rtspsrc_perform_seek (src, event);
+    {
+      guint32 seqnum = gst_event_get_seqnum (event);
+      if (seqnum == src->seek_seqnum) {
+        GST_LOG_OBJECT (pad, "Drop duplicated SEEK event seqnum %"
+            G_GUINT32_FORMAT, seqnum);
+      } else {
+        res = gst_rtspsrc_perform_seek (src, event);
+      }
+    }
       forward = FALSE;
       break;
     case GST_EVENT_QOS:
@@ -8737,7 +8735,7 @@ restart:
       break;
   }
 
-  memcpy (&src->out_segment, segment, sizeof (GstSegment));
+  src->out_segment = *segment;
 
   if (src->clip_out_segment) {
     /* Only clip the output segment when the server has answered with valid
