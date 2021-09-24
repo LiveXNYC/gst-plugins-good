@@ -306,8 +306,8 @@ if have_gstgl
     set_variable('gst_gl_have_api_@0@'.format(api), gst_gl_apis.contains(api))
   endforeach
 
-  gstglproto_dep = dependency('gstreamer-gl-prototypes-1.0', version : gst_req,
-      fallback : ['gst-plugins-base', 'gstglproto_dep'], required: true)
+  #gstglproto_dep = dependency('gstreamer-gl-prototypes-1.0', version : gst_req,
+  #    fallback : ['gst-plugins-base', 'gstglproto_dep'], required: true)
   # Behind specific checks because meson fails at optional dependencies with a
   # fallback to the same subproject.  On the first failure, meson will never
   # check the system again even if the fallback never existed.
@@ -430,11 +430,11 @@ if get_option('default_library') == 'shared'
   plugins_pkgconfig_install_dir = disabler()
 endif
 
-subdir('gst')
+#subdir('gst')
 subdir('sys')
-subdir('ext')
-subdir('tests')
-subdir('docs')
+#subdir('ext')
+#subdir('tests')
+#subdir('docs')
 
 if have_orcc and orc_targets.length() > 0
   update_orc_dist_files = find_program('scripts/update-orc-dist-files.py')
