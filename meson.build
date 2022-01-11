@@ -363,7 +363,7 @@ endif
 
 presetdir = join_paths(get_option('datadir'), 'gstreamer-' + api_version, 'presets')
 
-python3 = import('python').find_installation()
+# python3 = import('python').find_installation()
 pkgconfig = import('pkgconfig')
 plugins_pkgconfig_install_dir = join_paths(plugins_install_dir, 'pkgconfig')
 if get_option('default_library') == 'shared'
