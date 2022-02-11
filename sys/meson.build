@@ -1,2 +1,3 @@
 subdir('osxvideo')
+subdir('osxaudio')
 
